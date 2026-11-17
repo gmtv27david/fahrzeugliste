@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fahrzeugliste</title>
+<link rel="icon" type="image/png" href="logo.png">
 <style>
 :root{
   --bg:#0f1115;--panel:#171a21;--card:#1c2029;--line:#2a2f3a;--text:#e7e9ee;--muted:#8b93a3;
@@ -18,6 +19,9 @@ body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-a
 header{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
 .wrap{max-width:1500px;margin:0 auto;padding:0 16px}
 .top{display:flex;align-items:center;gap:12px;padding:14px 0 10px;flex-wrap:wrap}
+.brandmark{display:flex;align-items:center;gap:12px;min-width:0}
+.brandmark img{width:52px;height:52px;border-radius:50%;flex:none;box-shadow:0 0 0 2px var(--line),0 4px 14px rgba(0,0,0,.35)}
+.brandmark small{display:block;font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--accent);font-weight:600}
 h1{font-size:18px;margin:0;letter-spacing:.2px}
 h1 span{color:var(--muted);font-weight:500;font-size:13px;margin-left:6px}
 .spacer{flex:1}
@@ -69,7 +73,10 @@ textarea{width:100%;min-height:160px;resize:vertical;background:var(--bg);color:
 <header>
   <div class="wrap">
     <div class="top">
-      <h1>Fahrzeugliste <span id="total"></span></h1>
+      <div class="brandmark">
+        <img src="logo.png" alt="Southern California LA">
+        <div><small>Southern California</small><h1>Fahrzeugliste <span id="total"></span></h1></div>
+      </div>
       <div class="spacer"></div>
       <button id="exportNotes" title="Notizen als Datei speichern">Notizen exportieren</button>
       <button id="importNotes" title="Notizen-Datei laden">Importieren</button>

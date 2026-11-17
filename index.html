@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fahrzeugliste</title>
+<style>
+:root{
+  --bg:#0f1115;--panel:#171a21;--card:#1c2029;--line:#2a2f3a;--text:#e7e9ee;--muted:#8b93a3;
+  --accent:#f5b83d;--accent-ink:#1a1405;--ok:#4ec98a;--danger:#ef6b6b;
+}
+:root[data-theme="light"]{
+  --bg:#f4f5f7;--panel:#ffffff;--card:#ffffff;--line:#e1e4ea;--text:#171a21;--muted:#5d6575;
+  --accent:#c98a0c;--accent-ink:#fff;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.wrap{max-width:1500px;margin:0 auto;padding:0 16px}
+.top{display:flex;align-items:center;gap:12px;padding:14px 0 10px;flex-wrap:wrap}
+h1{font-size:18px;margin:0;letter-spacing:.2px}
+h1 span{color:var(--muted);font-weight:500;font-size:13px;margin-left:6px}
+.spacer{flex:1}
+.controls{display:flex;gap:8px;flex-wrap:wrap;padding-bottom:12px}
+input[type=search],select{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:9px 11px;font:inherit;min-width:0}
+input[type=search]{flex:1 1 280px}
+input[type=search]:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px}
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--text);padding:8px 12px}
+button:hover{border-color:var(--muted)}
+.chip{display:inline-flex;align-items:center;gap:6px;user-select:none}
+.chip input{accent-color:var(--accent)}
+.stat{color:var(--muted);font-size:13px;padding:10px 0 4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;padding:8px 0 40px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;transition:border-color .15s}
+.card:hover{border-color:var(--muted)}
+.img{aspect-ratio:16/10;background:linear-gradient(135deg,#232834,#1a1e26);display:grid;place-items:center;overflow:hidden;cursor:zoom-in}
+:root[data-theme="light"] .img{background:linear-gradient(135deg,#eceef2,#dfe3ea)}
+.img img{width:100%;height:100%;object-fit:contain}
+.img .none{color:var(--muted);font-size:12px}
+.body{padding:10px 12px 12px;display:flex;flex-direction:column;gap:6px;flex:1}
+.brand{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
+.title{font-weight:600;font-size:15px;line-height:1.25}
+.meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}
+.tag{font-size:11px;border:1px solid var(--line);border-radius:999px;padding:1px 8px;color:var(--muted)}
+.row{display:flex;align-items:center;gap:6px;margin-top:auto;padding-top:6px}
+.spawn{font-family:ui-monospace,Consolas,monospace;font-size:12px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:4px 7px;cursor:copy;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
+.price{font-size:12px;color:var(--ok);white-space:nowrap}
+.note-btn{padding:4px 9px;font-size:12px}
+.note-btn.has{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.note-preview{font-size:12px;color:var(--text);background:color-mix(in srgb,var(--accent) 12%,transparent);border-left:3px solid var(--accent);padding:5px 8px;border-radius:4px;white-space:pre-wrap;max-height:4.5em;overflow:hidden}
+a.src{color:var(--muted);font-size:12px;text-decoration:none}
+a.src:hover{color:var(--accent)}
+dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:0;width:min(520px,calc(100vw - 32px))}
+dialog::backdrop{background:rgba(0,0,0,.6)}
+.dlg{padding:16px;display:flex;flex-direction:column;gap:10px}
+.dlg h3{margin:0;font-size:16px}
+textarea{width:100%;min-height:160px;resize:vertical;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:10px;font:inherit}
+.dlg .actions{display:flex;gap:8px;justify-content:flex-end}
+.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.danger{color:var(--danger)}
+#zoom{width:min(1100px,calc(100vw - 32px))}
+#zoom img{width:100%;display:block;background:#111}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+.empty{color:var(--muted);text-align:center;padding:60px 0}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="top">
+      <h1>Fahrzeugliste <span id="total"></span></h1>
+      <div class="spacer"></div>
+      <button id="exportNotes" title="Notizen als Datei speichern">Notizen exportieren</button>
+      <button id="importNotes" title="Notizen-Datei laden">Importieren</button>
+      <input type="file" id="importFile" accept="application/json" hidden>
+      <button id="theme" title="Hell/Dunkel">◐</button>
+    </div>
+    <div class="controls">
+      <input type="search" id="q" placeholder="Suchen: Marke, Modell, Spawnname, Notiz …" autofocus>
+      <select id="cat"><option value="">Alle Kategorien</option></select>
+      <select id="brand"><option value="">Alle Marken</option></select>
+      <select id="cls"><option value="">Alle Klassen</option></select>
+      <select id="sort">
+        <option value="brand">Sortieren: Marke</option>
+        <option value="title">Sortieren: Name</option>
+        <option value="spawn">Sortieren: Spawnname</option>
+        <option value="priceAsc">Preis aufsteigend</option>
+        <option value="priceDesc">Preis absteigend</option>
+        <option value="id">ID</option>
+      </select>
+      <label class="chip"><input type="checkbox" id="onlyNotes"> nur mit Notiz</label>
+      <label class="chip"><input type="checkbox" id="noImg"> nur ohne Bild</label>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="stat" id="stat"></div>
+  <div class="grid" id="grid"></div>
+</main>
+
+<dialog id="noteDlg">
+  <form method="dialog" class="dlg">
+    <h3 id="noteTitle"></h3>
+    <textarea id="noteText" placeholder="Notiz zu diesem Fahrzeug …"></textarea>
+    <div class="actions">
+      <button value="delete" class="danger" type="submit">Löschen</button>
+      <span class="spacer"></span>
+      <button value="cancel" type="submit">Abbrechen</button>
+      <button value="save" class="primary" type="submit">Speichern</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="zoom"><img alt=""></dialog>
+<div class="toast" id="toast"></div>
+
+<script src="data.js"></script>
+<script>
+(() => {
+  const CARS = window.CARS || [];
+  const $ = s => document.querySelector(s);
+  const NOTE_KEY = 'fahrzeugliste.notes.v1';
+  const store = {
+    get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+  };
+  let notes = store.get(NOTE_KEY, {});
+  const saveNotes = () => store.set(NOTE_KEY, notes);
+
+  const theme = store.get('fahrzeugliste.theme', '');
+  if (theme) document.documentElement.dataset.theme = theme;
+  $('#theme').onclick = () => {
+    const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+    document.documentElement.dataset.theme = next; store.set('fahrzeugliste.theme', next);
+  };
+
+  const priceNum = p => { const n = (p || '').replace(/[^\d]/g, ''); return n ? +n : null; };
+  CARS.forEach(c => { c._price = priceNum(c.price); });
+
+  const fill = (sel, values, label = v => v) => {
+    [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b))
+      .forEach(v => sel.add(new Option(label(v), v)));
+  };
+  const catNames = { cars: 'Autos', boats: 'Boote', aircraft: 'Flugzeuge', helicopter: 'Helikopter' };
+  fill($('#cat'), CARS.map(c => c.category), v => catNames[v] || v);
+  fill($('#brand'), CARS.map(c => c.brand));
+  fill($('#cls'), CARS.map(c => c.cls));
+  $('#total').textContent = `${CARS.length} Fahrzeuge`;
+
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+
+  function filtered() {
+    const terms = $('#q').value.toLowerCase().trim().split(/\s+/).filter(Boolean);
+    const cat = $('#cat').value, brand = $('#brand').value, cls = $('#cls').value;
+    const onlyNotes = $('#onlyNotes').checked, noImg = $('#noImg').checked;
+    const list = CARS.filter(c => {
+      if (cat && c.category !== cat) return false;
+      if (brand && c.brand !== brand) return false;
+      if (cls && c.cls !== cls) return false;
+      if (onlyNotes && !notes[c.spawn]) return false;
+      if (noImg && c.img) return false;
+      if (!terms.length) return true;
+      const hay = `${c.brand} ${c.title} ${c.spawn} ${c.cls} ${c.resource} ${c.id ?? ''} ${notes[c.spawn] || ''}`.toLowerCase();
+      return terms.every(t => hay.includes(t));
+    });
+    const s = $('#sort').value;
+    const cmp = {
+      brand: (a, b) => a.brand.localeCompare(b.brand) || a.title.localeCompare(b.title),
+      title: (a, b) => a.title.localeCompare(b.title),
+      spawn: (a, b) => a.spawn.localeCompare(b.spawn),
+      priceAsc: (a, b) => (a._price ?? 1e15) - (b._price ?? 1e15),
+      priceDesc: (a, b) => (b._price ?? -1) - (a._price ?? -1),
+      id: (a, b) => (a.id ?? 1e9) - (b.id ?? 1e9),
+    }[s];
+    return list.sort(cmp);
+  }
+
+  const grid = $('#grid');
+  function render() {
+    const list = filtered();
+    $('#stat').textContent = `${list.length} von ${CARS.length} angezeigt · ${Object.keys(notes).length} Notizen`;
+    if (!list.length) { grid.innerHTML = '<div class="empty">Keine Fahrzeuge gefunden.</div>'; return; }
+    grid.innerHTML = list.map(c => {
+      const n = notes[c.spawn];
+      return `<article class="card" data-spawn="${esc(c.spawn)}">
+        <div class="img" data-act="zoom">${c.img ? `<img loading="lazy" src="${esc(c.img)}" alt="${esc(c.title)}">` : '<span class="none">Kein Bild im Vehicle Studio</span>'}</div>
+        <div class="body">
+          <div class="brand">${esc(c.brand)}${c.id != null ? ` · #${c.id}` : ''}</div>
+          <div class="title">${esc(c.title)}</div>
+          <div class="meta">
+            <span class="tag">${esc(catNames[c.category] || c.category)}</span>
+            ${c.cls ? `<span class="tag">${esc(c.cls)}</span>` : ''}
+            ${c.link ? `<a class="src" href="${esc(c.link)}" target="_blank" rel="noopener">Quelle ↗</a>` : ''}
+          </div>
+          ${n ? `<div class="note-preview">${esc(n)}</div>` : ''}
+          <div class="row">
+            <button class="spawn" data-act="copy" title="Spawnname kopieren">${esc(c.spawn)}</button>
+            ${c.price ? `<span class="price">${esc(c.price.replace(/^ca\.\s*/, ''))}</span>` : ''}
+            <button class="note-btn${n ? ' has' : ''}" data-act="note">${n ? '✎ Notiz' : '+ Notiz'}</button>
+          </div>
+        </div>
+      </article>`;
+    }).join('');
+  }
+
+  const toast = msg => { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 1400); };
+
+  let editing = null;
+  grid.addEventListener('click', e => {
+    const el = e.target.closest('[data-act]'); if (!el) return;
+    const spawn = el.closest('.card').dataset.spawn;
+    const car = CARS.find(c => c.spawn === spawn);
+    if (el.dataset.act === 'copy') {
+      navigator.clipboard?.writeText(spawn).then(() => toast(`„${spawn}“ kopiert`), () => toast(spawn));
+    } else if (el.dataset.act === 'note') {
+      editing = spawn;
+      $('#noteTitle').textContent = `${car.brand} ${car.title} (${spawn})`;
+      $('#noteText').value = notes[spawn] || '';
+      $('#noteDlg').showModal(); $('#noteText').focus();
+    } else if (el.dataset.act === 'zoom' && car.img) {
+      $('#zoom img').src = car.img; $('#zoom').showModal();
+    }
+  });
+  $('#zoom').addEventListener('click', () => $('#zoom').close());
+  $('#noteDlg').addEventListener('close', () => {
+    const v = $('#noteDlg').returnValue;
+    if (!editing) return;
+    if (v === 'save') { const t = $('#noteText').value.trim(); if (t) notes[editing] = t; else delete notes[editing]; }
+    if (v === 'delete') delete notes[editing];
+    if (v === 'save' || v === 'delete') { saveNotes(); render(); toast(v === 'save' ? 'Notiz gespeichert' : 'Notiz gelöscht'); }
+    editing = null;
+  });
+  $('#noteText').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { $('#noteDlg').close('save'); }
+  });
+
+  $('#exportNotes').onclick = () => {
+    const blob = new Blob([JSON.stringify(notes, null, 2)], { type: 'application/json' });
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'fahrzeug-notizen.json' });
+    a.click(); URL.revokeObjectURL(a.href);
+  };
+  $('#importNotes').onclick = () => $('#importFile').click();
+  $('#importFile').onchange = async e => {
+    const f = e.target.files[0]; if (!f) return;
+    try { const data = JSON.parse(await f.text()); Object.assign(notes, data); saveNotes(); render(); toast(`${Object.keys(data).length} Notizen importiert`); }
+    catch { toast('Datei ungültig'); }
+    e.target.value = '';
+  };
+
+  let t;
+  $('#q').addEventListener('input', () => { clearTimeout(t); t = setTimeout(render, 120); });
+  ['#cat', '#brand', '#cls', '#sort', '#onlyNotes', '#noImg'].forEach(s => $(s).addEventListener('change', render));
+  render();
+})();
+</script>
+</body>
+</html>

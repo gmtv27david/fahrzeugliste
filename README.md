@@ -11,3 +11,6 @@ Durchsuchbare Galerie aller Fahrzeuge aus `[vehicles]/[civ]` mit Bildern aus dem
 node build.js
 ```
 Liest `vehicles.meta` + `fahrzeuge.txt` aus dem civ-Ordner und `jg-vehiclestudio/local_data/index.json` und schreibt `data.js` / `cars.json`.
+
+## Korrekturen
+Falsche Marken oder Namen in `korrekturen.json` eintragen (pro Spawnname `brand`, `title`, `desc`), dann `node build.js`.

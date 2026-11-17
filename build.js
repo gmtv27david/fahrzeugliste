@@ -82,10 +82,51 @@ const list = [...cars.values()].map(c => {
     category: c.category,
     resource: c.resource,
     img: img ? img.url : '',
+    desc: '',
   };
 }).sort((a, b) => a.brand.localeCompare(b.brand) || a.title.localeCompare(b.title));
 
 function titleCase(s) { return s.toLowerCase().replace(/\b\w/g, m => m.toUpperCase()); }
+
+// 4) Name sauber trennen: "Name (Jahr)" + Beschreibung
+const YEAR = /^(19|20)\d{2}(\s*-\s*(19|20)\d{2})?$/;
+function splitTitle(t) {
+  let year = '', desc = [];
+  let base = t.replace(/\s*\(([^)]*)\)/g, (_, inner) => {
+    for (const part of inner.split(',').map(s => s.trim()).filter(Boolean)) {
+      if (!year && YEAR.test(part)) year = part.replace(/\s+/g, '');
+      else desc.push(part);
+    }
+    return ' ';
+  }).replace(/\s+/g, ' ').trim();
+  if (!year) {
+    const m = base.match(/^(.*?)\s+((?:19|20)\d{2})(?:\s+(.*))?$/);
+    if (m && m[1]) { base = m[1]; year = m[2]; if (m[3]) desc.unshift(m[3]); }
+  }
+  return { title: year ? `${base} (${year})` : base, desc: desc.join(', ') };
+}
+
+const fix = JSON.parse(fs.readFileSync(path.join(__dirname, 'korrekturen.json'), 'utf8'));
+const fixLower = {};
+for (const [k, v] of Object.entries(fix.fahrzeuge || {})) fixLower[k.toLowerCase()] = v;
+
+for (const c of list) {
+  Object.assign(c, splitTitle(c.title));
+  const o = fixLower[c.spawn.toLowerCase()];
+  if (o) {
+    if (o.brand) c.brand = o.brand;
+    if (o.title) c.title = o.title;
+    if (o.desc !== undefined) c.desc = o.desc;
+  }
+  c.brand = (fix.marken || {})[c.brand] || c.brand;
+}
+
+// 5) Gleiche Namen innerhalb eines Packs durchnummerieren
+const groups = {};
+for (const c of list) (groups[`${c.brand}|${c.title}|${c.desc}`] = groups[`${c.brand}|${c.title}|${c.desc}`] || []).push(c);
+for (const g of Object.values(groups)) if (g.length > 1) g.forEach((c, i) => { if (i > 0) c.desc = [c.desc, `Variante ${i + 1}`].filter(Boolean).join(', '); });
+
+list.sort((a, b) => a.brand.localeCompare(b.brand) || a.title.localeCompare(b.title));
 
 fs.writeFileSync(path.join(__dirname, 'cars.json'), JSON.stringify(list, null, 1));
 fs.writeFileSync(path.join(__dirname, 'data.js'), 'window.CARS = ' + JSON.stringify(list) + ';\n');
